@@ -87,7 +87,7 @@ isPy36 = isPy3 and version.minor == 6
 setup(
     name='intervaltree',
     version=vinfo['version'],
-    install_requires=['sortedcontainers < 3'],
+    install_requires=['sortedcontainers < 3', 'ordered_set'],
     description='Editable interval tree data structure for Python 2 and 3',
     long_description=long_description,
     long_description_content_type='text/markdown',

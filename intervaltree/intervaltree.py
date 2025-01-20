@@ -28,6 +28,7 @@ from numbers import Number
 from sortedcontainers import SortedDict
 from copy import copy
 from warnings import warn
+from ordered_set import OrderedSet
 
 try:
     from collections.abc import MutableSet  # Python 3?
@@ -256,7 +257,7 @@ class IntervalTree(MutableSet):
 
         Completes in O(n*log n) time.
         """
-        intervals = set(intervals) if intervals is not None else set()
+        intervals = OrderedSet(intervals) if intervals is not None else OrderedSet()
         for iv in intervals:
             if iv.is_null():
                 raise ValueError(
@@ -403,7 +404,7 @@ class IntervalTree(MutableSet):
         Returns a new tree, comprising all intervals in self but not
         in other.
         """
-        ivs = set()
+        ivs = OrderedSet()
         for iv in self:
             if iv not in other:
                 ivs.add(iv)
@@ -421,14 +422,14 @@ class IntervalTree(MutableSet):
         Returns a new tree, comprising all intervals from self
         and other.
         """
-        return IntervalTree(set(self).union(other))
+        return IntervalTree(OrderedSet(self).union(other))
 
     def intersection(self, other):
         """
         Returns a new tree of all intervals common to both self and
         other.
         """
-        ivs = set()
+        ivs = OrderedSet()
         shorter, longer = sorted([self, other], key=len)
         for iv in shorter:
             if iv in longer:
@@ -449,8 +450,8 @@ class IntervalTree(MutableSet):
         Return a tree with elements only in self or other but not
         both.
         """
-        if not isinstance(other, set): other = set(other)
-        me = set(self)
+        if not isinstance(other, OrderedSet): other = OrderedSet(other)
+        me = OrderedSet(self)
         ivs = me.difference(other).union(other.difference(me))
         return IntervalTree(ivs)
 
@@ -459,7 +460,7 @@ class IntervalTree(MutableSet):
         Throws out all intervals except those only in self or other,
         not both.
         """
-        other = set(other)
+        other = OrderedSet(other)
         ivs = list(self)
         for iv in ivs:
             if iv in other:
@@ -527,8 +528,8 @@ class IntervalTree(MutableSet):
         :param datafunc(interval, isupper): callable returning a new
         value for the interval's data field
         """
-        hitlist = set(iv for iv in self.at(point) if iv.begin < point)
-        insertions = set()
+        hitlist = OrderedSet(iv for iv in self.at(point) if iv.begin < point)
+        insertions = OrderedSet()
         if datafunc:
             for iv in hitlist:
                 insertions.add(Interval(iv.begin, point, datafunc(iv, True)))
@@ -561,7 +562,7 @@ class IntervalTree(MutableSet):
         def add_if_nested():
             if parent.contains_interval(child):
                 if parent not in result:
-                    result[parent] = set()
+                    result[parent] = OrderedSet()
                 result[parent].add(child)
 
         long_ivs = sorted(self.all_intervals, key=Interval.length, reverse=True)
@@ -635,7 +636,7 @@ class IntervalTree(MutableSet):
 
         bounds = sorted(self.boundary_table)  # get bound locations
 
-        new_ivs = set()
+        new_ivs = OrderedSet()
         for lbound, ubound in zip(bounds[:-1], bounds[1:]):
             for iv in self[lbound]:
                 new_ivs.add(Interval(lbound, ubound, iv.data))
@@ -850,7 +851,7 @@ class IntervalTree(MutableSet):
         Completes in O(n) time.
         :rtype: set of Interval
         """
-        return set(self.all_intervals)
+        return OrderedSet(self.all_intervals)
 
     def is_empty(self):
         """
@@ -872,8 +873,8 @@ class IntervalTree(MutableSet):
         """
         root = self.top_node
         if not root:
-            return set()
-        return root.search_point(p, set())
+            return OrderedSet()
+        return root.search_point(p, OrderedSet())
 
     def envelop(self, begin, end=None):
         """
@@ -888,13 +889,13 @@ class IntervalTree(MutableSet):
         """
         root = self.top_node
         if not root:
-            return set()
+            return OrderedSet()
         if end is None:
             iv = begin
             return self.envelop(iv.begin, iv.end)
         elif begin >= end:
-            return set()
-        result = root.search_point(begin, set()) # bound_begin might be greater
+            return OrderedSet()
+        result = root.search_point(begin, OrderedSet()) # bound_begin might be greater
         boundary_table = self.boundary_table
         bound_begin = boundary_table.bisect_left(begin)
         bound_end = boundary_table.bisect_left(end)  # up to, but not including end
@@ -904,7 +905,7 @@ class IntervalTree(MutableSet):
         ))
 
         # TODO: improve envelop() to use node info instead of less-efficient filtering
-        result = set(
+        result = OrderedSet(
             iv for iv in result
             if iv.begin >= begin and iv.end <= end
         )
@@ -922,13 +923,13 @@ class IntervalTree(MutableSet):
         """
         root = self.top_node
         if not root:
-            return set()
+            return OrderedSet()
         if end is None:
             iv = begin
             return self.overlap(iv.begin, iv.end)
         elif begin >= end:
-            return set()
-        result = root.search_point(begin, set())  # bound_begin might be greater
+            return OrderedSet()
+        result = root.search_point(begin, OrderedSet())  # bound_begin might be greater
         boundary_table = self.boundary_table
         bound_begin = boundary_table.bisect_left(begin)
         bound_end = boundary_table.bisect_left(end)  # up to, but not including end
@@ -1006,7 +1007,7 @@ class IntervalTree(MutableSet):
                 print(
                     'Error: the tree and the membership set are out of sync!'
                 )
-                tivs = set(self.top_node.all_children())
+                tivs = OrderedSet(self.top_node.all_children())
                 print('top_node.all_children() - all_intervals:')
                 try:
                     pprint
@@ -1044,7 +1045,7 @@ class IntervalTree(MutableSet):
                     bound_check[iv.end] = 1
 
             ## Reconstructed boundary table (bound_check) ==? boundary_table
-            assert set(self.boundary_table.keys()) == set(bound_check.keys()),\
+            assert OrderedSet(self.boundary_table.keys()) == OrderedSet(bound_check.keys()),\
                 'Error: boundary_table is out of sync with ' \
                 'the intervals in the tree!'
 
@@ -1057,7 +1058,7 @@ class IntervalTree(MutableSet):
                         key, bound_check[key], val)
 
             ## Internal tree structure
-            self.top_node.verify(set())
+            self.top_node.verify(OrderedSet())
         else:
             ## Verify empty tree
             assert not self.boundary_table, \
@@ -1109,14 +1110,14 @@ class IntervalTree(MutableSet):
           * n = size of the tree
           * m = number of matches
           * k = size of the search range (this is 1 for a point)
-        :rtype: set of Interval
+        :rtype: OrderedSet of Interval
         """
         try:
             start, stop = index.start, index.stop
             if start is None:
                 start = self.begin()
                 if stop is None:
-                    return set(self)
+                    return OrderedSet(self)
             if stop is None:
                 stop = self.end()
             return self.overlap(start, stop)
